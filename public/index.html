@@ -1,0 +1,85 @@
+<html>
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script>
+	/*$(document).ready(function(){
+	    $("#btn").click(function(){
+	        $.post("http://localhost:8000/api", $('#form').serialize(), function(data, status){
+	            $('#result').text(data);
+	        });
+	    });
+	});*/
+$(document).ready(function(){
+	var request;
+	if ("WebSocket" in window)
+            {
+                             
+               // Let us open a web socket
+               var ws;
+               if(ws == undefined) ws = new WebSocket("ws://localhost:8003");
+				
+               ws.onopen = function()
+               {
+                  // Web Socket is connected, send data using send()
+                  //ws.send("Message to send");
+                  //console.log("Message is sent...");
+                  request = ws;
+               };
+				
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  console.log("Message is received...");
+                  $('#result').text($('#result').val() + received_msg);
+                  $('#result').scrollTop($('#result')[0].scrollHeight);
+               };
+				
+               ws.onclose = function()
+               { 
+                  // websocket is closed.
+                  alert("Connection is closed..."); 
+               };
+            }
+	
+	$('#btn').click(function(){
+	var command = $('#form input[name=command]').val();
+	var match;
+
+	/*if(match = /^connect\s+(.*)$/.exec(command) !== null) {
+	    if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+	        request=new XMLHttpRequest();
+	    } else {// code for IE6, IE5
+	        request=new ActiveXObject("Microsoft.XMLHTTP");
+	    }
+	    request.open("POST","http://localhost:8000/api");
+		request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		request.onreadystatechange=function()
+		{
+		    switch(request.readyState)
+		    {
+		        case 4:
+		            console.log("all good things come to an end");
+		        break;
+		        case 3:
+		            console.log("o, hai!" + request.responseText);
+		            $('#result').text(request.responseText);
+		        break;
+		    }
+		}
+	} */
+	if(request != undefined) request.send(command);
+	
+
+});
+});
+</script>
+</head>
+<body>
+	<form id="form">
+		<input type="text" name="command"></input>
+		<input type="button" id="btn" value="submit"/>
+	</form>
+	<textarea id="result" style="border:1px solid black;width:800px;height:500px;">
+	</textarea>
+</body>
+</html>
