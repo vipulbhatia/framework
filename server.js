@@ -94,15 +94,16 @@ app.listen(8000, function(){
 
 //webagent server on port 8003
 wss.on('connection', function(ws) {
+	var token;
 	if(client_tokens.length == 0) {
 		clients.push(ws);
 		token = clients.indexOf(ws);
-		console.log('got token: ' + token);
+		console.log('web socket client got token: ' + token);
 	} else {
 		token = client_tokens.shift();
 		clients[token] = ws;
 	}
-	
+	ws.send('connected to master...channel no is ' + token + '\n');
 	ws.on('message', function(d){
 		d = d.toString();
 		var match = /^(.*)$/m.exec(d);
@@ -112,6 +113,17 @@ wss.on('connection', function(ws) {
 		cli.token = token;
 		cli.command = d;
 		
+		if(/^sub\s+(\d+)$/.test(d)) {
+			var match = /^sub\s+(\d+)$/.exec(d);
+			if(client_router[match[1]]) {
+				var i = client_router[match[1]];
+				agent_router[i].push(match[1]);
+				client_router[token] = i;
+				ws.send('connected to channel: ' + match[1] + '\n\n');
+			}
+			return;
+		}
+
 		if(d == 'close') {
 			console.log('ws: got close...');
 			ws.end('bye');
@@ -140,10 +152,12 @@ wss.on('connection', function(ws) {
 
 	ws.on('close', function(){
 		console.log('ws: client dropped...');
+		clean_up_client(token);
 	});
 
 	ws.on('error', function(err){
 		console.log('ws: client dropped due to error...');
+		clean_up_client(token);
 	});
 });
 
@@ -154,7 +168,7 @@ net.createServer(function(agent){
 	if(agent_tokens.length == 0) {
 		agents.push(agent);
 		token = agents.indexOf(agent);
-		console.log('got token: ' + token);
+		console.log('agent got token: ' + token);
 	} else {
 		token = agent_tokens.shift();
 		agents[token] = agent;
@@ -171,17 +185,19 @@ net.createServer(function(agent){
 			}
 		}*/
 		if(agent_router[token]) {
-			var i = agent_router[token];
-			console.log('sending to client agent...' + i);
-			if(typeof clients[i].write != "undefined") clients[i].write(d);
-			else clients[i].send(d);
+			for(var i in agent_router[token]) {
+				console.log('sending to client ...' + i);
+				if(typeof clients[i].write != "undefined") clients[i].write(d);
+				else clients[i].send(d);
+			}
 			return;
 		}
 
 		if(/^connection for token (\d+)$/.test(d)) {
 			var match = /^connection for token (\d+)$/.exec(d);
 			client_router[match[1]] = token;
-			agent_router[token] = match[1];
+			if(!agent_router[token]) agent_router[token] = [];
+			agent_router[token].push(match[1]);
 			//agent.pipe(clients[match[1]]);
 			return;
 		}
@@ -204,9 +220,11 @@ net.createServer(function(agent){
 			var match = /([^]*)token:(\d):([^]*)$/.exec(d);
 			//console.log(clients[match[2]]);
 			//var match = /^token:(\d):([\n|\r|\S\s]*)$/.exec(d);
-			if(match != null && match[2] != null) clients[match[2]].write(match[3]);
-			while(match = /([^]*)token:(\d):([^]*)$/.exec(match[1]) !== null) {
-				if(match[2] != null) clients[match[2]].write(match[3]);
+			if(match != null && match[2] != null) {
+				clients[match[2]].write(match[3]);
+				while(match = /([^]*)token:(\d):([^]*)$/.exec(match[1]) !== null) {
+					if(match[2] != null) clients[match[2]].write(match[3]);
+				}
 			} 
 			//clients[match[1]].write(match[2].replace(/token:(\d):/g,''));
 		}	
@@ -226,7 +244,7 @@ net.createServer(function(client){
 	if(client_tokens.length == 0) {
 		clients.push(client);
 		token = clients.indexOf(client);
-		console.log('got token: ' + token);
+		console.log('tcp client got token: ' + token);
 	} else {
 		token = client_tokens.shift();
 		clients[token] = client;

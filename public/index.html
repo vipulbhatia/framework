@@ -10,13 +10,13 @@
 	    });
 	});*/
 $(document).ready(function(){
-	var request;
+	var request, command;
 	if ("WebSocket" in window)
             {
                              
                // Let us open a web socket
                var ws;
-               if(ws == undefined) ws = new WebSocket("ws://localhost:8003");
+               if(ws == undefined) ws = new WebSocket("ws://155.16.55.226:8003");
 				
                ws.onopen = function()
                {
@@ -42,8 +42,7 @@ $(document).ready(function(){
             }
 	
 	$('#btn').click(function(){
-	var command = $('#form input[name=command]').val();
-	var match;
+	command = $('#form input[name=command]').val();
 
 	/*if(match = /^connect\s+(.*)$/.exec(command) !== null) {
 	    if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari

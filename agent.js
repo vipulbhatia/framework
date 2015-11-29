@@ -2,6 +2,7 @@ var WinExe = require('winexe'),
 	net = require('net'),
 	spawn = require('child_process').spawn,
 	on_death = require('death'),
+	Tail = require('file-tail'),
 	masterServer = 'localhost';
 
 var agent = net.connect({port: 8001, host: masterServer}, function(){
@@ -89,6 +90,28 @@ var agent = net.connect({port: 8001, host: masterServer}, function(){
 							console.log(err);
 						});
 		
+					} else if(/^watch\s+(.*)$/.test(d.command)) {
+						var match = /^watch\s+(.*)$/.exec(d.command);
+						tail = Tail.startTailing(match[1]);
+			
+						conn.write("watching file: " + match[1] + '\n\n');
+						tail.on("line", function(data) {
+						  console.log(data);
+						  conn.write(data + '\n');
+						});
+						 
+						tail.on("error", function(error) {
+						  console.log('ERROR: ', error);
+						});
+							 
+						tail.on("tailError", function(error) {
+						  console.log('ERROR: ', error);
+						});
+					} else if(/^unwatch$/.test(d.command)) {
+						console.log('stopping file watcher...');
+						tail.stop();
+						tail = null;
+						child_1.stdin.write('cd\n');
 					}
 					else {
 						console.log('running command: ' + d.command);
