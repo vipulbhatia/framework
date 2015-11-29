@@ -1,0 +1,7 @@
+{
+  "name": "framework",
+  "description": "does something",
+  "author": "Vipul Bhatia <vipulbhatia99@gmail.com>",
+  "version": "0.0.1",
+  "main": "server.js"
+}
